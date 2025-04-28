@@ -74,6 +74,7 @@
   </div>
 
   <script>
+    var base_url = "https://azure-api-h0hca4ckb8dwhrcj.swedencentral-01.azurewebsites.net"
     const promptListEl = document.getElementById('prompt-list');
     const promptTextEl = document.getElementById('prompt-text');
     const saveBtn = document.getElementById('save-button');
@@ -83,7 +84,7 @@
     let selected = null;
 
     function loadPrompts() {
-      fetch(`/chats/${offset}`)
+      fetch(base_url+`/chats/${offset}`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data.chats) && data.chats.length) {
@@ -127,7 +128,7 @@
       if (!texte) return;
 
       if (selected) {
-        fetch(`/chats/${selected.id}`, {
+        fetch(base_url+`/chats/${selected.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: texte })
@@ -144,7 +145,7 @@
         .catch(err => console.error('Erreur update:', err));
 
       } else {
-        fetch('/chats', {
+        fetch(base_url+'/chats', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: texte })
