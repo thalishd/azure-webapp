@@ -25,8 +25,6 @@
     <button id="save-button" disabled>Enregistrer</button>
   </div>
 
-  <!-- Axios CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     var base_url = "https://azure-api-h0hca4ckb8dwhrcj.swedencentral-01.azurewebsites.net";
 
@@ -38,24 +36,25 @@
     let offset  = 0;
     let selected = null;
 
-    function loadPrompts() {
-      axios.get(`${base_url}/chats/${offset}`)
-        .then(response => {
-          const data = response.data;
-          if (Array.isArray(data.chats) && data.chats.length) {
-            data.chats.forEach(item => {
-              const idx = prompts.length;
-              prompts.push(item);
-              const div = document.createElement('div');
-              div.className = 'prompt-item';
-              div.textContent = item.prompt.length > 50 ? item.prompt.slice(0,50) + '…' : item.prompt;
-              div.dataset.index = idx;
-              promptListEl.appendChild(div);
-            });
-            offset += data.chats.length;
-          }
-        })
-        .catch(error => console.error('Erreur chargement prompts :', error));
+    async function loadPrompts() {
+      try {
+        const response = await fetch(`${base_url}/chats/${offset}`);
+        const data = await response.json();
+        if (Array.isArray(data.chats) && data.chats.length) {
+          data.chats.forEach(item => {
+            const idx = prompts.length;
+            prompts.push(item);
+            const div = document.createElement('div');
+            div.className = 'prompt-item';
+            div.textContent = item.prompt.length > 50 ? item.prompt.slice(0,50) + '…' : item.prompt;
+            div.dataset.index = idx;
+            promptListEl.appendChild(div);
+          });
+          offset += data.chats.length;
+        }
+      } catch (error) {
+        console.error('Erreur chargement prompts :', error);
+      }
     }
 
     promptListEl.addEventListener('scroll', () => {
@@ -76,36 +75,48 @@
       saveBtn.disabled = !promptTextEl.value.trim();
     });
 
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener('click', async () => {
       const texte = promptTextEl.value.trim();
       if (!texte) return;
 
-      if (selected) {
-        axios.patch(`${base_url}/chats/${selected.id}`, { prompt: texte })
-          .then(res => {
-            if (res.status === 200) {
-              prompts[selected.index].prompt = texte;
-              refreshList();
-              alert('Prompt mis à jour !');
-            } else {
-              alert('Erreur lors de la mise à jour.');
-            }
-          })
-          .catch(err => console.error('Erreur update :', err));
-      } else {
-        axios.post(`${base_url}/chats`, { prompt: texte })
-          .then(res => {
-            if (res.status === 200) {
-              prompts = [];
-              offset = 0;
-              promptListEl.innerHTML = '';
-              loadPrompts();
-              alert('Nouveau prompt créé !');
-            } else {
-              alert('Erreur lors de la création.');
-            }
-          })
-          .catch(err => console.error('Erreur création :', err));
+      try {
+        if (selected) {
+          const response = await fetch(`${base_url}/chats/${selected.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: texte })
+          });
+
+          if (response.ok) {
+            prompts[selected.index].prompt = texte;
+            refreshList();
+            alert('Prompt mis à jour !');
+          } else {
+            alert('Erreur lors de la mise à jour.');
+          }
+        } else {
+          const response = await fetch(`${base_url}/chats`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: texte })
+          });
+
+          if (response.ok) {
+            prompts = [];
+            offset = 0;
+            promptListEl.innerHTML = '';
+            loadPrompts();
+            alert('Nouveau prompt créé !');
+          } else {
+            alert('Erreur lors de la création.');
+          }
+        }
+      } catch (err) {
+        console.error('Erreur requête :', err);
       }
 
       selected = null;
