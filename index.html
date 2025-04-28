@@ -74,114 +74,114 @@
   </div>
 
   <script>
-    const promptListEl   = document.getElementById('prompt-list');
-    const promptTextEl   = document.getElementById('prompt-text');
-    const saveBtn        = document.getElementById('save-button');
+    const promptListEl = document.getElementById('prompt-list');
+    const promptTextEl = document.getElementById('prompt-text');
+    const saveBtn = document.getElementById('save-button');
 
-    let prompts = [];       // tableau des {id, prompt, answer}
-    let offset  = 0;
-    let selected = null;    // {id, prompt, answer, index}
+    let prompts = [];
+    let offset = 0;
+    let selected = null;
 
-    // Charger 20 prompts à partir de l'offset
-    async function loadPrompts() {
-      const res  = await fetch(`/chats/${offset}`);
-      const data = await res.json();
-      if (Array.isArray(data.chats) && data.chats.length) {
-        data.chats.forEach(item => {
-          const idx = prompts.length;
-          prompts.push(item);
-          const div = document.createElement('div');
-          div.className = 'prompt-item';
-          div.textContent = item.prompt.length > 50
-            ? item.prompt.slice(0,50) + '…'
-            : item.prompt;
-          div.dataset.index = idx;
-          promptListEl.appendChild(div);
-        });
-        offset += data.chats.length;
-      }
+    function loadPrompts() {
+      fetch(`/chats/${offset}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data.chats) && data.chats.length) {
+            data.chats.forEach(item => {
+              const idx = prompts.length;
+              prompts.push(item);
+              const div = document.createElement('div');
+              div.className = 'prompt-item';
+              div.textContent = item.prompt.length > 50
+                ? item.prompt.slice(0, 50) + '…'
+                : item.prompt;
+              div.dataset.index = idx;
+              promptListEl.appendChild(div);
+            });
+            offset += data.chats.length;
+          }
+        })
+        .catch(err => console.error('Erreur chargement prompts:', err));
     }
 
-    // Déclenche scroll infini
     promptListEl.addEventListener('scroll', () => {
       if (promptListEl.scrollTop + promptListEl.clientHeight >= promptListEl.scrollHeight - 10) {
         loadPrompts();
       }
     });
 
-    // Clic pour sélectionner un prompt
     promptListEl.addEventListener('click', e => {
       if (!e.target.classList.contains('prompt-item')) return;
       const idx = Number(e.target.dataset.index);
       selected = { ...prompts[idx], index: idx };
       promptTextEl.value = selected.prompt;
-      saveBtn.disabled  = false;
+      saveBtn.disabled = false;
     });
 
-    // Activer/désactiver le bouton Enregistrer
     promptTextEl.addEventListener('input', () => {
       saveBtn.disabled = !promptTextEl.value.trim();
     });
 
-    // Enregistrer (PATCH ou POST)
-    saveBtn.addEventListener('click', async () => {
+    saveBtn.addEventListener('click', () => {
       const texte = promptTextEl.value.trim();
       if (!texte) return;
 
       if (selected) {
-        // → mise à jour
-        const res = await fetch(`/chats/${selected.id}`, {
+        fetch(`/chats/${selected.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: texte })
-        });
-        if (res.ok) {
-          prompts[selected.index].prompt = texte;
-          refreshList();
-          alert('Prompt mis à jour !');
-        } else {
-          alert('Erreur lors de la mise à jour.');
-        }
+        })
+        .then(res => {
+          if (res.ok) {
+            prompts[selected.index].prompt = texte;
+            refreshList();
+            alert('Prompt mis à jour !');
+          } else {
+            alert('Erreur lors de la mise à jour.');
+          }
+        })
+        .catch(err => console.error('Erreur update:', err));
+
       } else {
-        // → création
-        const res = await fetch('/chats', {
+        fetch('/chats', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: texte })
-        });
-        if (res.ok) {
-          // reset et rechargement
-          prompts = [];
-          offset  = 0;
-          promptListEl.innerHTML = '';
-          loadPrompts();
-          alert('Nouveau prompt créé !');
-        } else {
-          alert('Erreur lors de la création.');
-        }
+        })
+        .then(res => {
+          if (res.ok) {
+            prompts = [];
+            offset = 0;
+            promptListEl.innerHTML = '';
+            loadPrompts();
+            alert('Nouveau prompt créé !');
+          } else {
+            alert('Erreur lors de la création.');
+          }
+        })
+        .catch(err => console.error('Erreur création:', err));
       }
 
-      // reset form
       selected = null;
       promptTextEl.value = '';
-      saveBtn.disabled   = true;
+      saveBtn.disabled = true;
     });
 
-    // Rafraîchir l'affichage de la liste après update
     function refreshList() {
       promptListEl.innerHTML = '';
       prompts.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'prompt-item';
         div.textContent = item.prompt.length > 50
-          ? item.prompt.slice(0,50) + '…'
+          ? item.prompt.slice(0, 50) + '…'
           : item.prompt;
         div.dataset.index = idx;
         promptListEl.appendChild(div);
       });
     }
 
-    // chargement initial
+    // Initial
     loadPrompts();
   </script>
 
