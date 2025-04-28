@@ -1,10 +1,189 @@
-<DOCTYPE!>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"/>
-<title>Welcome</title>
+  <meta charset="UTF-8">
+  <title>Gestionnaire de Prompts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: #333; color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    #prompt-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      border-bottom: 1px solid #ccc;
+    }
+    .prompt-item {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    .prompt-item:hover {
+      background: #f0f0f0;
+    }
+    #editor {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    #prompt-text {
+      width: 100%;
+      height: 100px;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+    }
+    #save-button {
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: #fff;
+      cursor: pointer;
+    }
+    #save-button:disabled {
+      background-color: #888;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
-<p>Hello my frend</p>
+
+  <header>Gestionnaire de Prompts</header>
+
+  <div id="prompt-list"></div>
+
+  <div id="editor">
+    <textarea id="prompt-text" placeholder="Cliquez sur un prompt ou saisissez un nouveau prompt…"></textarea>
+    <button id="save-button" disabled>Enregistrer</button>
+  </div>
+
+  <script>
+    const promptListEl   = document.getElementById('prompt-list');
+    const promptTextEl   = document.getElementById('prompt-text');
+    const saveBtn        = document.getElementById('save-button');
+
+    let prompts = [];       // tableau des {id, prompt, answer}
+    let offset  = 0;
+    let selected = null;    // {id, prompt, answer, index}
+
+    // Charger 20 prompts à partir de l'offset
+    async function loadPrompts() {
+      const res  = await fetch(`/chats/${offset}`);
+      const data = await res.json();
+      if (Array.isArray(data.chats) && data.chats.length) {
+        data.chats.forEach(item => {
+          const idx = prompts.length;
+          prompts.push(item);
+          const div = document.createElement('div');
+          div.className = 'prompt-item';
+          div.textContent = item.prompt.length > 50
+            ? item.prompt.slice(0,50) + '…'
+            : item.prompt;
+          div.dataset.index = idx;
+          promptListEl.appendChild(div);
+        });
+        offset += data.chats.length;
+      }
+    }
+
+    // Déclenche scroll infini
+    promptListEl.addEventListener('scroll', () => {
+      if (promptListEl.scrollTop + promptListEl.clientHeight >= promptListEl.scrollHeight - 10) {
+        loadPrompts();
+      }
+    });
+
+    // Clic pour sélectionner un prompt
+    promptListEl.addEventListener('click', e => {
+      if (!e.target.classList.contains('prompt-item')) return;
+      const idx = Number(e.target.dataset.index);
+      selected = { ...prompts[idx], index: idx };
+      promptTextEl.value = selected.prompt;
+      saveBtn.disabled  = false;
+    });
+
+    // Activer/désactiver le bouton Enregistrer
+    promptTextEl.addEventListener('input', () => {
+      saveBtn.disabled = !promptTextEl.value.trim();
+    });
+
+    // Enregistrer (PATCH ou POST)
+    saveBtn.addEventListener('click', async () => {
+      const texte = promptTextEl.value.trim();
+      if (!texte) return;
+
+      if (selected) {
+        // → mise à jour
+        const res = await fetch(`/chats/${selected.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: texte })
+        });
+        if (res.ok) {
+          prompts[selected.index].prompt = texte;
+          refreshList();
+          alert('Prompt mis à jour !');
+        } else {
+          alert('Erreur lors de la mise à jour.');
+        }
+      } else {
+        // → création
+        const res = await fetch('/chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: texte })
+        });
+        if (res.ok) {
+          // reset et rechargement
+          prompts = [];
+          offset  = 0;
+          promptListEl.innerHTML = '';
+          loadPrompts();
+          alert('Nouveau prompt créé !');
+        } else {
+          alert('Erreur lors de la création.');
+        }
+      }
+
+      // reset form
+      selected = null;
+      promptTextEl.value = '';
+      saveBtn.disabled   = true;
+    });
+
+    // Rafraîchir l'affichage de la liste après update
+    function refreshList() {
+      promptListEl.innerHTML = '';
+      prompts.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'prompt-item';
+        div.textContent = item.prompt.length > 50
+          ? item.prompt.slice(0,50) + '…'
+          : item.prompt;
+        div.dataset.index = idx;
+        promptListEl.appendChild(div);
+      });
+    }
+
+    // chargement initial
+    loadPrompts();
+  </script>
+
 </body>
 </html>
