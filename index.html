@@ -12,7 +12,6 @@
     #editor { padding:1rem; display:flex; flex-direction:column; gap:.5rem; }
     #prompt-text { width:100%; height:100px; padding:.5rem; font-size:1rem; border:1px solid #ccc; border-radius:5px; resize:vertical; }
     #save-button { padding:.75rem; font-size:1rem; border:none; border-radius:5px; background-color:#4CAF50; color:#fff; cursor:pointer; }
-    #save-button:disabled { background-color:#888; cursor:not-allowed; }
     .chat-list p:hover {color:blue; cursor: pointer;}
     .grille {
       display: grid;
@@ -60,12 +59,12 @@
 
   <div class="grille">
     <div class="cellule-gauche">
-      <div class="chat-list">
+      <div class="chat-list" id="chat-list">
         <p>Nouveau Chat</p>
       </div>
     </div>
     <div class="chat-answer">
-      <p></p>
+      <p id="text-answer"></p>
     </div>
     <div class="input-area">
       <div id="editor">
@@ -95,20 +94,9 @@
     const promptTextEl = document.getElementById('prompt-text');
     const saveBtn      = document.getElementById('save-button');
 
-    let prompts = [];
+    let prompts = []
     let offset  = 0;
     let selected = null;
-
-    async function refreshList() {
-      promptListEl.innerHTML = '';
-      prompts.forEach((item, idx) => {
-        const div = document.createElement('p');
-        div.className = 'chat-item';
-        div.innerHTML = item.prompt.length > 50 ? item.prompt.slice(0,50) + '…' : item.prompt;
-        div.index = idx;
-        promptListEl.appendChild(div);
-      });
-    }
 
     async function getChats(id) {
       fetch(base_url + "/chats/" + id)
@@ -120,7 +108,12 @@
       })
       .then((data) => {
         data["chats"].forEach((chat)=>{
-          prompts.push(chat)
+          const div = document.createElement('p');
+          div.className = 'chat-item';
+          div.innerHTML = item.prompt.length > 50 ? item.prompt.slice(0,50) + '…' : item.prompt;
+          div.index = idx;
+          promptListEl.appendChild(div);
+          prompts.append(chat)
         });
         offset = prompts.length;
       })
@@ -129,11 +122,8 @@
       });
     }
 
-    document.getEleme
-
     // Chargement initial
     getChats(offset)
-    refreshList();
   </script>
 </body>
 </html>
