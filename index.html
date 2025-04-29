@@ -110,7 +110,7 @@
         data["chats"].forEach((chat)=>{
           const div = document.createElement('p');
           div.className = 'chat-item';
-          div.innerHTML = item.prompt.length > 50 ? item.prompt.slice(0,50) + '…' : item.prompt;
+          div.innerHTML = chat["prompt"].length > 50 ? chat["prompt"].slice(0,50) + '…' : chat["prompt"];
           div.index = idx;
           promptListEl.appendChild(div);
           prompts.append(chat)
