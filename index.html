@@ -121,7 +121,7 @@
         return response.json();
       })
       .then((data) => {
-        data["chat"].forEach((chat)=>{
+        data["chats"].forEach((chat)=>{
           prompts.push(chat)
         });
         offset = prompts.length;
