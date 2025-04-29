@@ -48,8 +48,19 @@
     }
 
     async function getchats(id) {
-      response = await fetch(base_url+"/chats/"+id)
-      console.log(response.json())
+      fetch(base_url + "/chats/" + id)
+      .then((response) => {
+        if (!response.ok) {
+          return [];
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la récupération des chats :", error);
+      });
     }
 
     // Chargement initial
