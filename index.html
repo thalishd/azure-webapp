@@ -13,6 +13,44 @@
     #prompt-text { width:100%; height:100px; padding:.5rem; font-size:1rem; border:1px solid #ccc; border-radius:5px; resize:vertical; }
     #save-button { padding:.75rem; font-size:1rem; border:none; border-radius:5px; background-color:#4CAF50; color:#fff; cursor:pointer; }
     #save-button:disabled { background-color:#888; cursor:not-allowed; }
+    .chat-list p:hover {color:blue; cursor: pointer;}
+    .grille {
+      display: grid;
+      grid-template-columns: 200px 1fr; /* Première colonne de 200px, seconde prend le reste */
+      grid-template-rows: auto auto; /* Deux lignes automatiques */
+      gap: 10px;
+      height: 90vh; /* Hauteur totale de la fenêtre */
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .cellule-gauche {
+      grid-column: 1;
+      grid-row: 1;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+
+    .chat-list {
+      overflow-y: auto;
+      padding: 10px;
+      height:90vh;
+    }
+
+    .chat-answer {
+      grid-column: 2;
+      grid-row: 1;
+      background-color: #e0e0e0;
+      padding: 10px;
+    }
+
+    .input-area {
+      grid-column: 1 / span 2; /* S'étend sur les deux colonnes */
+      grid-row: 2;
+      background-color: #d0d0d0;
+      padding: 10px;
+    }
+
   </style>
 </head>
 <body>
@@ -20,12 +58,39 @@
 
   <div id="prompt-list"></div>
 
-  <div id="editor">
-    <textarea id="prompt-text" placeholder="Cliquez sur un prompt ou saisissez un nouveau prompt…"></textarea>
-    <button id="save-button" disabled>Enregistrer</button>
+  <div class="grille">
+    <div class="cellule-gauche">
+      <div class="chat-list">
+        <p>Nouveau Chat</p>
+        <p>Texte 1</p>
+        <p>Texte 2</p>
+      </div>
+    </div>
+    <div class="chat-answer">
+      <p></p>
+    </div>
+    <div class="input-area">
+      <div id="editor">
+        <textarea id="prompt-text" placeholder="Cliquez sur un prompt ou saisissez un nouveau prompt…"></textarea>
+        <button id="save-button" disabled>Enregistrer</button>
+      </div>
+    </div>
   </div>
+  
+
 
   <script>
+    // https://randyperkins2k.medium.com/writing-a-simple-markdown-parser-using-javascript-1f2e9449a558
+
+    const markdownParser = (text) => {
+      const toHTML = text
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>') // h3 tag
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>') // h2 tag
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>') // h1 tag
+        .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>') // bold text
+        .replace(/\*(.*)\*/gim, '<i>$1</i>'); // italic text
+      return toHTML.trim(); // using trim method to remove whitespace
+    }
     var base_url = "https://azure-api-h0hca4ckb8dwhrcj.swedencentral-01.azurewebsites.net";
 
     const promptListEl = document.getElementById('prompt-list');
@@ -36,7 +101,7 @@
     let offset  = 0;
     let selected = null;
 
-    function refreshList() {
+    async function refreshList() {
       promptListEl.innerHTML = '';
       prompts.forEach((item, idx) => {
         const div = document.createElement('div');
@@ -47,7 +112,7 @@
       });
     }
 
-    async function getchats(id) {
+    async function getChats(id) {
       fetch(base_url + "/chats/" + id)
       .then((response) => {
         if (!response.ok) {
@@ -56,16 +121,21 @@
         return response.json();
       })
       .then((data) => {
-        console.log(data);
+        data["chat"].forEach((chat)=>{
+          prompts.push(chat)
+        });
+        offset = prompts.length;
       })
       .catch((error) => {
         console.error("Erreur lors de la récupération des chats :", error);
       });
     }
 
+    document.getEleme
+
     // Chargement initial
+    getChats(offset)
     refreshList();
-    getchats(0);
   </script>
 </body>
 </html>
