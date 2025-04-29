@@ -62,8 +62,6 @@
     <div class="cellule-gauche">
       <div class="chat-list">
         <p>Nouveau Chat</p>
-        <p>Texte 1</p>
-        <p>Texte 2</p>
       </div>
     </div>
     <div class="chat-answer">
@@ -93,7 +91,7 @@
     }
     var base_url = "https://azure-api-h0hca4ckb8dwhrcj.swedencentral-01.azurewebsites.net";
 
-    const promptListEl = document.getElementById('prompt-list');
+    const promptListEl = document.getElementById('chat-list');
     const promptTextEl = document.getElementById('prompt-text');
     const saveBtn      = document.getElementById('save-button');
 
@@ -104,8 +102,8 @@
     async function refreshList() {
       promptListEl.innerHTML = '';
       prompts.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'prompt-item';
+        const div = document.createElement('p');
+        div.className = 'chat-item';
         div.innerHTML = item.prompt.length > 50 ? item.prompt.slice(0,50) + '…' : item.prompt;
         div.index = idx;
         promptListEl.appendChild(div);
