@@ -113,7 +113,7 @@
           div.innerHTML = chat["prompt"].length > 50 ? chat["prompt"].slice(0,50) + '…' : chat["prompt"];
           div.index = chat["id"];
           promptListEl.appendChild(div);
-          prompts.append(chat)
+          prompts.push(chat)
         });
         offset = prompts.length;
       })
