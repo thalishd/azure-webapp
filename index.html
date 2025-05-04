@@ -159,7 +159,7 @@
       })
       .then(function(res){ return res.json(); })
       .then(function(data){
-        textAnswer.innerHTML = data["answer"]
+        textAnswer.innerHTML = markdownParser(data["answer"])
         prompts[selected]["answer"] = data["answer"]
         prompts[selected]["prompt"] = prompt
         saveBtn.style["animation-iteration-count"] = 0
@@ -182,7 +182,7 @@
         promptListEl.appendChild(div);
         prompts[data["id"]] = data
         selected = data["id"]
-        textAnswer.innerHTML = data["answer"]
+        textAnswer.innerHTML = markdownParser(data["answer"])
         saveBtn.style["animation-iteration-count"] = 0
       });
     }
