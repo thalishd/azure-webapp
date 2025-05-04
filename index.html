@@ -11,7 +11,25 @@
     .prompt-item:hover { background:#f0f0f0; }
     #editor { padding:1rem; display:flex; flex-direction:column; gap:.5rem; }
     #prompt-text { width:100%; height:100px; padding:.5rem; font-size:1rem; border:1px solid #ccc; border-radius:5px; resize:vertical; }
-    #save-button { padding:.75rem; font-size:1rem; border:none; border-radius:5px; background-color:#4CAF50; color:#fff; cursor:pointer; }
+    #save-button { 
+      padding:.75rem; 
+      font-size:1rem; 
+      border:none; 
+      border-radius:5px; 
+      background-color:#4CAF50; 
+      color:#fff; 
+      cursor:pointer;
+      animation-name: buttoncolor;
+      animation-duration: 2s;
+      animation-iteration-count: 0;
+    }
+    @keyframes buttoncolor {
+      0%   {background-color: green;}
+      25%  {background-color: yellow;}
+      50%  {background-color: blue;}
+      100% {background-color: red;}
+    }
+    #newchat-button {padding:.75rem; font-size:1rem; border:none; border-radius:5px; background-color:#4CAF50; color:#fff; cursor:pointer; width: 100%;}
     .chat-list p:hover {color:blue; cursor: pointer;}
     .grille {
       display: grid;
@@ -26,7 +44,6 @@
     .cellule-gauche {
       grid-column: 1;
       grid-row: 1;
-      background-color: #f0f0f0;
       overflow: hidden;
     }
 
@@ -34,6 +51,7 @@
       overflow-y: auto;
       padding: 10px;
       height:90vh;
+      background-color: #f0f0f0;
     }
 
     .chat-answer {
@@ -59,8 +77,8 @@
 
   <div class="grille">
     <div class="cellule-gauche">
+      <button id="newchat-button"><p>Nouveau Chat</p></button>
       <div class="chat-list" id="chat-list">
-        <p>Nouveau Chat</p>
       </div>
     </div>
     <div class="chat-answer">
@@ -68,8 +86,8 @@
     </div>
     <div class="input-area">
       <div id="editor">
-        <textarea id="prompt-text" placeholder="Cliquez sur un prompt ou saisissez un nouveau prompt…"></textarea>
-        <button id="save-button" disabled>Enregistrer</button>
+        <textarea tabindex="0" id="prompt-text" placeholder="Cliquez sur un prompt ou saisissez un nouveau prompt…"></textarea>
+        <span tabindex="1" id="save-button" disabled>Enregistrer</span>
       </div>
     </div>
   </div>
@@ -88,17 +106,89 @@
         .replace(/\*(.*)\*/gim, '<i>$1</i>'); // italic text
       return toHTML.trim(); // using trim method to remove whitespace
     }
+    // https://stackoverflow.com/questions/6234773/can-i-escape-html-special-chars-in-javascript
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     var base_url = "https://azure-api-h0hca4ckb8dwhrcj.swedencentral-01.azurewebsites.net";
 
     const promptListEl = document.getElementById('chat-list');
     const promptTextEl = document.getElementById('prompt-text');
     const saveBtn      = document.getElementById('save-button');
+    const textAnswer   = document.getElementById('text-answer');
+    const newChat      = document.getElementById('newchat-button')
 
-    let prompts = []
+    var selected = -1;
+    let prompts = {}
     let offset  = 0;
-    let selected = null;
 
-    async function getChats(id) {
+    // click handler pour les éléments dynamiques de la liste de chats
+    clickHandler = function(e){
+      const id = e.target.getAttribute("index")
+      selected = id
+      promptTextEl.value = prompts[id]["prompt"]
+      textAnswer.innerHTML = markdownParser(prompts[id]["answer"])
+    }
+
+    // création d'un chat dans la liste à gauche
+    function createPromptBlock(chat){
+      chat["prompt"] = escapeHtml(chat["prompt"])
+      const obj = document.createElement('p');
+      obj.className = 'chat-item';
+      obj.innerHTML = chat["prompt"].length > 50 ? chat["prompt"].slice(0,50) + '…' : chat["prompt"];
+      obj.setAttribute("index",parseInt(chat["id"]));
+      obj.addEventListener("click",clickHandler)
+      return obj
+    }
+
+
+    // mise à jour d'un prompt
+    async function updatePrompt(prompt){
+      fetch(base_url + "/chats/"+selected,{
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        method: "PATCH",
+        body: JSON.stringify({"prompt":prompt})
+      })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        textAnswer.innerHTML = data["answer"]
+        prompts[selected]["answer"] = data["answer"]
+        prompts[selected]["prompt"] = prompt
+        saveBtn.style["animation-iteration-count"] = 0
+      });
+    }
+
+    // création d'un prompt
+    async function createNewPrompt(prompt) {
+      fetch(base_url + "/chats",{
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        method: "POST",
+        body: JSON.stringify({"prompt":prompt})
+      })
+      .then(function(res){ return res.json(); })
+      .then(function(data){ 
+        data["prompt"] = prompt
+        const div = createPromptBlock(data);
+        promptListEl.appendChild(div);
+        prompts[data["id"]] = data
+        selected = data["id"]
+        textAnswer.innerHTML = data["answer"]
+        saveBtn.style["animation-iteration-count"] = 0
+      });
+    }
+
+    // chargement des 20 prochains prompts dans la bd
+    async function getNextChats(id) {
       fetch(base_url + "/chats/" + id)
       .then((response) => {
         if (!response.ok) {
@@ -108,22 +198,42 @@
       })
       .then((data) => {
         data["chats"].forEach((chat)=>{
-          const div = document.createElement('p');
-          div.className = 'chat-item';
-          div.innerHTML = chat["prompt"].length > 50 ? chat["prompt"].slice(0,50) + '…' : chat["prompt"];
-          div.index = chat["id"];
+          const div = createPromptBlock(chat);
           promptListEl.appendChild(div);
-          prompts.push(chat)
+          prompts[chat["id"]] = chat
         });
-        offset = prompts.length;
+        offset = Object.keys(prompts).length;
       })
       .catch((error) => {
         console.error("Erreur lors de la récupération des chats :", error);
       });
     }
 
+    
+    // boutton enregistrer
+    saveBtn.addEventListener('click', function(){
+      let prompt = promptTextEl.value;
+      saveBtn.style["animation-iteration-count"] = "infinite"
+      if(prompt != ""){
+        if(selected == -1){
+          createNewPrompt(prompt);
+        }else{
+          updatePrompt(prompt)
+        } 
+      } 
+    });
+    
+
+    // boutton nouveau chat
+    newChat.addEventListener('click', function(){
+      textAnswer.innerHTML = "";
+      selected = -1
+    });
+
     // Chargement initial
-    getChats(offset)
+    getNextChats(offset)
+
+    // 
   </script>
 </body>
 </html>
