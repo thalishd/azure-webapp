@@ -134,7 +134,7 @@
       const id = e.target.getAttribute("index")
       selected = id
       promptTextEl.value = prompts[id]["prompt"]
-      textAnswer.innerHTML = markdownParser(prompts[id]["answer"])
+      textAnswer.innerHTML = escapeHTML(markdownParser(prompts[id]["answer"]))
     }
 
     // création d'un chat dans la liste à gauche
@@ -160,7 +160,7 @@
       })
       .then(function(res){ return res.json(); })
       .then(function(data){
-        textAnswer.innerHTML = markdownParser(data["answer"])
+        textAnswer.innerHTML = escapeHTML(markdownParser(data["answer"]))
         prompts[selected]["answer"] = data["answer"]
         prompts[selected]["prompt"] = prompt
       }).catch((error) => {
@@ -188,7 +188,7 @@
         prompts[data["id"]] = data
         selected = data["id"]
         console.log(data)
-        textAnswer.innerHTML = markdownParser(data["answer"])
+        textAnswer.innerHTML = escapeHTML(markdownParser(data["answer"]))
       }).catch((error) => {
         console.log("Error creating new prompt");
       })
