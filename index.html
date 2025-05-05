@@ -138,10 +138,10 @@
 
     // création d'un chat dans la liste à gauche
     function createPromptBlock(chat){
-      chat["prompt"] = escapeHtml(chat["prompt"])
+      escaped_prompt = escapeHtml(chat["prompt"])
       const obj = document.createElement('p');
       obj.className = 'chat-item';
-      obj.innerHTML = chat["prompt"].length > 50 ? chat["prompt"].slice(0,50) + '…' : chat["prompt"];
+      obj.innerHTML = escaped_prompt.length > 50 ? escaped_prompt.slice(0,50) + '…' : escaped_prompt;
       obj.setAttribute("index",parseInt(chat["id"]));
       obj.addEventListener("click",clickHandler)
       return obj
