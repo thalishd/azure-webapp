@@ -132,7 +132,8 @@
     clickHandler = function(e){
       const id = e.target.getAttribute("index")
       selected = id
-      promptTextEl.value = evaluate(prompts[id]["prompt"])
+      promptTextEl.innerHTML = prompts[id]["prompt"]
+      promptTextEl.value = promptTextEl.innerHTML
       textAnswer.innerHTML = markdownParser(prompts[id]["answer"])
     }
 
