@@ -163,6 +163,10 @@
         textAnswer.innerHTML = markdownParser(data["answer"])
         prompts[selected]["answer"] = data["answer"]
         prompts[selected]["prompt"] = prompt
+      }).catch((error) => {
+        console.log("Error updating the prompt");
+      })
+      .then(() => {
         saveBtn.style["animation-iteration-count"] = 0
       });
     }
@@ -183,7 +187,12 @@
         promptListEl.appendChild(div);
         prompts[data["id"]] = data
         selected = data["id"]
+        console.log(data)
         textAnswer.innerHTML = markdownParser(data["answer"])
+      }).catch((error) => {
+        console.log("Error creating new prompt");
+      })
+      .then(() => {
         saveBtn.style["animation-iteration-count"] = 0
       });
     }
