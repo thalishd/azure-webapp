@@ -59,6 +59,7 @@
       grid-row: 1;
       background-color: #e0e0e0;
       padding: 10px;
+      overflow-y: auto;
     }
 
     .input-area {
@@ -138,7 +139,7 @@
 
     // création d'un chat dans la liste à gauche
     function createPromptBlock(chat){
-      escaped_prompt = escapeHtml(chat["prompt"])
+      let escaped_prompt = escapeHtml(chat["prompt"])
       const obj = document.createElement('p');
       obj.className = 'chat-item';
       obj.innerHTML = escaped_prompt.length > 50 ? escaped_prompt.slice(0,50) + '…' : escaped_prompt;
